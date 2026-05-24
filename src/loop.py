@@ -128,6 +128,7 @@ def run_research_loop(
                 buf.add(spec, acc)
                 writer.writerow([step, i, f"{acc:.4f}", is_new_best,
                                  f"{buf.best_acc:.4f}", spec.to_summary(), f"{wall_time:.1f}"])
+            f.flush()
 
             # --- Optional GRPO weight update ---
             grpo_loss = None

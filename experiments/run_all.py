@@ -95,6 +95,7 @@ def _run_c2_batched(generate_fn, n_runs, seeds, G, program_md,
                                          f"{bufs[run_i].best_acc:.4f}",
                                          spec.to_summary(), f"{wall:.1f}"])
             run_histories[run_i].append(bufs[run_i].best_acc)
+            csv_files[run_i].flush()
 
         best_across = max(b.best_acc for b in bufs)
         print(f"[C2_batched] step={step:3d}  "
