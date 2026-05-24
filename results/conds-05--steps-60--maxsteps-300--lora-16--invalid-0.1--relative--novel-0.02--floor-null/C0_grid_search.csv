@@ -1,0 +1,27 @@
+step,name,spec_summary,acc,wall_time
+0,A1_2stage_64-128,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=medium",0.4483,14.4
+1,A2_3stage_64-256,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=medium",0.4581,13.2
+2,A3_3stage_32-128,"stages=[C32x2(batch,silu,stride), C64x3(batch,silu,stride), C128x2(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=medium",0.4634,13.7
+3,A4_4stage_32-256,"stages=[C32x2(batch,silu,stride), C64x2(batch,silu,stride), C128x2(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=medium",0.4730,13.8
+4,A5_3stage_deep,"stages=[C64x3(batch,silu,stride), C128x3(batch,silu,stride), C256x3(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=medium",0.4455,12.6
+5,A6_wide_128-256,"stages=[C128x2(batch,silu,stride), C256x3(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=medium",0.4723,13.6
+6,N1_group,"stages=[C64x2(group,silu,stride), C128x3(group,silu,stride), C256x2(group,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=medium",0.3919,12.6
+7,N2_none,"stages=[C64x2(none,silu,stride), C128x3(none,silu,stride), C256x2(none,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=medium",0.1000,13.4
+8,Act1_relu,"stages=[C64x2(batch,relu,stride), C128x3(batch,relu,stride), C256x2(batch,relu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=medium",0.5139,13.1
+9,Act2_gelu,"stages=[C64x2(batch,gelu,stride), C128x3(batch,gelu,stride), C256x2(batch,gelu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=medium",0.4972,12.1
+10,LR1_0.001,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.001,wd=0.01) sched=cosine aug=medium",0.5069,13.7
+11,LR3_0.01,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.01,wd=0.01) sched=cosine aug=medium",0.3850,13.9
+12,WD1_0.001,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.001) sched=cosine aug=medium",0.4541,14.0
+13,WD2_0.05,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.05) sched=cosine aug=medium",0.4618,14.1
+14,Opt1_adam,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=True drop=0.1 opt=adam(lr=0.003,wd=0.01) sched=cosine aug=medium",0.2664,14.1
+15,Opt2_sgd_mom0.9,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=True drop=0.1 opt=sgd(lr=0.003,wd=0.01) sched=cosine aug=medium",0.3926,12.2
+16,Sched1_step,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=step aug=medium",0.4451,13.5
+17,Sched2_none,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=none aug=medium",0.4615,12.2
+18,Aug1_basic,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=basic",0.4815,10.1
+19,Aug2_strong,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=strong",0.4046,26.0
+20,Drop1_0.2,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=True drop=0.2 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=medium",0.4504,12.3
+21,Drop2_0.3,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=True drop=0.3 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=medium",0.4692,12.2
+22,Res0_no_residual,"stages=[C64x2(batch,silu,stride), C128x3(batch,silu,stride), C256x2(batch,silu,avgpool)] residual=False drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=medium",0.4124,13.1
+23,C1_4stage_group_gelu,"stages=[C32x2(group,gelu,stride), C64x2(group,gelu,stride), C128x3(group,gelu,stride), C256x2(group,gelu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.003,wd=0.01) sched=cosine aug=medium",0.3934,14.2
+24,C2_3stage_deep_strong,"stages=[C64x3(batch,silu,stride), C128x3(batch,silu,stride), C256x3(batch,silu,avgpool)] residual=True drop=0.1 opt=adamw(lr=0.001,wd=0.01) sched=cosine aug=strong",0.4024,27.7
+25,C3_wide_lr001_strong,"stages=[C128x2(batch,gelu,stride), C256x3(batch,gelu,avgpool)] residual=True drop=0.2 opt=adamw(lr=0.001,wd=0.01) sched=cosine aug=strong",0.4334,27.2

@@ -1,0 +1,11 @@
+data/
+results/*.csv
+results/*.png
+results/all_histories.json
+__pycache__/
+*.pyc
+*.egg-info/
+.wandb/
+*.pt
+*.safetensors
+.txt

@@ -1,0 +1,3 @@
+step,candidate,acc,is_best,best_so_far,spec_summary,wall_time
+0,0,0.1000,True,0.1000,"stages=[C256x1(batch,silu,maxpool), C256x2(batch,gelu,avgpool), C64x3(none,gelu,stride), C32x3(batch,silu,avgpool)] residual=True drop=0.2 opt=adamw(lr=0.0001,wd=0.05) sched=none aug=medium",8.2
+1,0,0.1000,False,0.1000,"stages=[C32x2(none,gelu,maxpool), C256x3(batch,relu,stride)] residual=True drop=0.3 opt=adam(lr=0.003,wd=0.05) sched=none aug=strong",4.6

@@ -2,7 +2,6 @@
 import json
 import copy
 import torch
-import torch.nn.functional as F
 from typing import List, Optional
 from src.action_space import ArchSpec
 
@@ -54,23 +53,25 @@ def setup_grpo_model(
 
 
 def _completion_log_probs(model, tokenizer, prompt: str, completion: str) -> torch.Tensor:
-    """Sum of log-probs over completion tokens only (not prompt tokens)."""
+    """
+    Sum of log-probs over completion tokens only.
+    Uses labels=-100 on prompt tokens so the model computes cross-entropy
+    internally — avoids materialising the full (seq_len, vocab) log_probs tensor.
+    """
     full_text = prompt + completion
     inputs = tokenizer(full_text, return_tensors="pt").to(model.device)
     prompt_len = tokenizer(prompt, return_tensors="pt")["input_ids"].shape[1]
 
-    logits = model(**inputs).logits  # (1, seq_len, vocab)
-    log_probs = F.log_softmax(logits[0], dim=-1)
-    target_ids = inputs["input_ids"][0]
+    labels = inputs["input_ids"].clone()
+    labels[0, :prompt_len] = -100   # ignore prompt tokens
 
-    # Shift: position i predicts token i+1
-    comp_lps = [
-        log_probs[i, target_ids[i + 1]]
-        for i in range(prompt_len, len(target_ids) - 1)
-    ]
-    if not comp_lps:
-        return torch.tensor(0.0, device=model.device)
-    return torch.stack(comp_lps).sum()
+    n_comp = int((labels[0] != -100).sum())
+    if n_comp == 0:
+        return torch.tensor(0.0, device=model.device, requires_grad=True)
+
+    outputs = model(**inputs, labels=labels, use_cache=False)
+    # outputs.loss = mean NLL over completion tokens → convert to sum of log-probs
+    return -outputs.loss * n_comp
 
 
 def grpo_update(
@@ -85,7 +86,9 @@ def grpo_update(
     eps: float = 1e-8,
 ) -> dict:
     """
-    One GRPO gradient step.
+    One GRPO gradient step using per-candidate backward to save GPU memory.
+    Each candidate's loss is backpropagated immediately so only one computation
+    graph is live at a time (instead of accumulating all G graphs then backward).
     Returns dict with 'loss', 'pg_loss', 'kl_loss'.
     """
     rewards = torch.tensor(accs, dtype=torch.float32)
@@ -96,42 +99,46 @@ def grpo_update(
         for c in candidates
     ]
 
-    pg_loss = torch.tensor(0.0, device=model.device)
-    kl_loss = torch.tensor(0.0, device=model.device)
-    n_valid = 0
+    n_valid = sum(
+        1 for comp, acc in zip(completions, accs)
+        if not (comp == "{}" and acc == 0.0)
+    )
+    if n_valid == 0:
+        return {"loss": 0.0, "pg_loss": 0.0, "kl_loss": 0.0}
+
+    optimizer.zero_grad()
+    total_pg = 0.0
+    total_kl = 0.0
 
     for completion, adv, acc in zip(completions, advantages, accs):
         if completion == "{}" and acc == 0.0:
-            continue  # skip failed JSON parses
+            continue
 
-        with torch.enable_grad():
-            log_prob = _completion_log_probs(model, tokenizer, prompt, completion)
-
-        pg_loss = pg_loss - adv.to(model.device) * log_prob
+        log_prob = _completion_log_probs(model, tokenizer, prompt, completion)
+        pg_term = -adv.to(model.device) * log_prob / n_valid
 
         if ref_model is not None:
             with torch.no_grad():
                 ref_lp = _completion_log_probs(ref_model, tokenizer, prompt, completion)
-            kl_loss = kl_loss + (log_prob - ref_lp)
+            kl_term = (log_prob.detach() - ref_lp) / n_valid
+            loss = pg_term + kl_coef * kl_term
+            total_kl += kl_term.item()
+        else:
+            loss = pg_term
 
-        n_valid += 1
+        # Backward immediately — frees this candidate's computation graph
+        loss.backward()
+        torch.cuda.empty_cache()
+        total_pg += pg_term.item()
 
-    if n_valid == 0:
-        return {"loss": 0.0, "pg_loss": 0.0, "kl_loss": 0.0}
-
-    pg_loss = pg_loss / n_valid
-    kl_loss = kl_loss / n_valid
-    loss = pg_loss + kl_coef * kl_loss if ref_model is not None else pg_loss
-
-    optimizer.zero_grad()
-    loss.backward()
     torch.nn.utils.clip_grad_norm_(
         [p for p in model.parameters() if p.requires_grad], 1.0
     )
     optimizer.step()
 
+    total_loss = total_pg + kl_coef * total_kl
     return {
-        "loss": loss.item(),
-        "pg_loss": pg_loss.item(),
-        "kl_loss": kl_loss.item() if ref_model is not None else 0.0,
+        "loss": total_loss,
+        "pg_loss": total_pg,
+        "kl_loss": total_kl,
     }

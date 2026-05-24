@@ -1,0 +1,36 @@
+# Model
+model: Qwen/Qwen3-1.7B          # HuggingFace model ID or local path
+
+# Experiment
+conditions: [C1, C2, C3, C4, C5]  # subset to run: any of C1 C2 C3 C4 C5
+n_steps: 60                        # research steps per condition
+max_train_steps: 300               # gradient steps per candidate evaluation
+
+# Paths
+data_root: ./data                  # CIFAR-10 download path (~170MB on first run)
+results_dir: ./results             # CSV + JSON + plot output directory
+
+# GRPO (C5 only)
+use_kl_penalty: false              # add KL(pi_theta || pi_ref) penalty to GRPO loss
+kl_coef: 0.1                       # beta coefficient for KL term
+lora_r: 16                         # LoRA rank (8=small, 16=standard, 32=large)
+lora_alpha: 32                     # LoRA scaling factor (typically 2*lora_r)
+
+# History
+history_k: 5                       # number of recent experiments shown in LLM prompt (0 = no history)
+history_top_k: 3                   # top-accuracy configs also shown (may overlap with recent)
+
+# Reward shaping (affects GRPO only; does not change evaluation accuracy)
+invalid_penalty: 0.1               # negative reward when model outputs invalid JSON
+use_relative_reward: true          # reward = acc - best_so_far (improvement over baseline)
+novelty_coef: 0.02                 # bonus for proposing diverse configs (0 = disabled)
+reward_floor: null                 # floor for valid-candidate rewards (null = no floor; invalid penalty unaffected)
+
+# Evaluation
+parallel_eval: true                # run G candidates simultaneously (mp.spawn)
+seed: 0
+n_runs: 1                          # independent repetitions per condition (seed+i*1000 per run)
+parallel_runs: false               # C1: spawn n_runs processes; C2: batch G*n_runs per LLM call
+
+# Logging
+wandb_project: cifar10-automl      # W&B project name; set "disabled" to skip

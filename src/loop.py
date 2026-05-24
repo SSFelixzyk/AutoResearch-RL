@@ -13,6 +13,7 @@ except ImportError:
 
 from src.action_space import ArchSpec, sample_random_spec
 from src.history import HistoryBuffer
+from src.reward import compute_rewards
 from src.trainer import evaluate_spec
 
 
@@ -50,9 +51,14 @@ def run_research_loop(
     data_root: str = "./data",
     max_train_steps: int = 500,
     history_k: int = 10,
+    history_top_k: int = 3,
     parallel_eval: bool = True,
     generate_fn: Optional[Callable] = None,
     grpo_update_fn: Optional[Callable] = None,
+    invalid_penalty: float = 0.1,
+    use_relative_reward: bool = False,
+    novelty_coef: float = 0.0,
+    reward_floor: Optional[float] = None,
     wandb_run=None,
     seed: int = 0,
 ) -> List[float]:
@@ -63,7 +69,7 @@ def run_research_loop(
     Path(results_dir).mkdir(parents=True, exist_ok=True)
     csv_path = os.path.join(results_dir, f"{condition_name}_steps.csv")
 
-    buf = HistoryBuffer(max_k=history_k)
+    buf = HistoryBuffer(max_k=history_k, top_k=history_top_k)
     best_acc_history: List[float] = []
 
     with open(csv_path, "w", newline="") as f:
@@ -77,13 +83,16 @@ def run_research_loop(
 
             # --- Generate G candidates ---
             if generate_fn is not None:
-                candidates = generate_fn(prompt, n=G)
-                # Replace None (invalid JSON parse) with random fallback
+                raw_candidates = generate_fn(prompt, n=G)
+                if len(raw_candidates) != G:
+                    raise ValueError(f"generate_fn returned {len(raw_candidates)} items, expected {G}")
+                # Replace None (invalid JSON) with random fallback for evaluation
                 candidates = [
                     c if c is not None else sample_random_spec(seed=seed + step * G + i)
-                    for i, c in enumerate(candidates)
+                    for i, c in enumerate(raw_candidates)
                 ]
             else:
+                raw_candidates = [None] * G   # C1 random: no LLM output to penalise
                 candidates = [
                     sample_random_spec(seed=seed + step * G + i) for i in range(G)
                 ]
@@ -100,8 +109,20 @@ def run_research_loop(
 
             wall_time = time.time() - t0
 
-            # --- Update history with all G results ---
+            # --- Shaped rewards (computed before history update so best_so_far is pre-step) ---
             prev_best = buf.best_acc
+            recent_specs = [e.spec for e in buf.recent]
+            shaped_rewards, reward_stats = compute_rewards(
+                raw_candidates, accs,
+                best_so_far=prev_best,
+                recent_specs=recent_specs,
+                invalid_penalty=invalid_penalty,
+                use_relative=use_relative_reward,
+                novelty_coef=novelty_coef,
+                reward_floor=reward_floor,
+            )
+
+            # --- Update history with all G results ---
             for i, (spec, acc) in enumerate(zip(candidates, accs)):
                 is_new_best = acc > buf.best_acc
                 buf.add(spec, acc)
@@ -114,7 +135,7 @@ def run_research_loop(
                 grpo_loss = grpo_update_fn(
                     prompt=prompt,
                     candidates=candidates,
-                    accs=accs,
+                    accs=shaped_rewards,
                 )
 
             best_acc_history.append(buf.best_acc)
@@ -128,14 +149,18 @@ def run_research_loop(
             # --- wandb ---
             if wandb_run is not None:
                 log = {
+                    f"{condition_name}/step": step,
                     f"{condition_name}/best_acc": buf.best_acc,
                     f"{condition_name}/step_best_acc": max(accs),
                     f"{condition_name}/step_mean_acc": sum(accs) / len(accs),
                     f"{condition_name}/wall_time_s": wall_time,
                     f"{condition_name}/improved": int(buf.best_acc > prev_best),
+                    f"{condition_name}/reward_mean":   reward_stats["reward_mean"],
+                    f"{condition_name}/reward_novelty_mean": reward_stats["novelty_mean"],
+                    f"{condition_name}/reward_invalid_count": reward_stats["invalid_count"],
                 }
                 if grpo_loss is not None:
                     log[f"{condition_name}/grpo_loss"] = grpo_loss
-                wandb_run.log(log, step=step)
+                wandb_run.log(log)
 
     return best_acc_history
