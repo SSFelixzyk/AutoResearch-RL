@@ -22,7 +22,12 @@ history_top_k: 3                   # top-accuracy configs also shown (may overla
 
 # Reward shaping (affects GRPO only; does not change evaluation accuracy)
 invalid_penalty: 0.1               # negative reward when model outputs invalid JSON
-use_relative_reward: true          # reward = acc - best_so_far (improvement over baseline)
+reward_mode: relative              # relative | absolute | recent_mean | mixed
+                                   #   relative:    r = acc - best_so_far  (original)
+                                   #   absolute:    r = acc
+                                   #   recent_mean: r = acc - mean(recent history)  (moving baseline)
+                                   #   mixed:       r = alpha*acc + (1-alpha)*(acc - best_so_far)
+reward_alpha: 0.5                  # alpha for mixed mode (ignored for other modes)
 novelty_coef: 0.02                 # bonus for proposing diverse configs (0 = disabled)
 reward_floor: null                 # floor for valid-candidate rewards (null = no floor; invalid penalty unaffected)
 

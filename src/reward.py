@@ -46,13 +46,21 @@ def compute_rewards(
     accs: List[float],
     best_so_far: float = 0.0,
     recent_specs: Optional[List[ArchSpec]] = None,
+    recent_accs: Optional[List[float]] = None,
     invalid_penalty: float = 0.1,
-    use_relative: bool = False,
+    reward_mode: str = "relative",
+    reward_alpha: float = 0.5,
     novelty_coef: float = 0.0,
     reward_floor: Optional[float] = None,
 ) -> Tuple[List[float], dict]:
     """
     Compute shaped rewards for GRPO.
+
+    reward_mode:
+      "relative"    — r = acc - best_so_far  (original)
+      "absolute"    — r = acc
+      "recent_mean" — r = acc - mean(recent_accs)  (moving baseline)
+      "mixed"       — r = alpha*acc + (1-alpha)*(acc - best_so_far)
 
     reward_floor applies only to valid candidates — invalid JSON keeps its
     full -invalid_penalty so the model still learns to avoid bad outputs
@@ -60,6 +68,13 @@ def compute_rewards(
 
     Returns (rewards, stats) where stats contains per-component means for wandb.
     """
+    if reward_mode == "recent_mean":
+        baseline = sum(recent_accs) / len(recent_accs) if recent_accs else 0.0
+    elif reward_mode == "relative":
+        baseline = best_so_far
+    else:
+        baseline = 0.0  # absolute / mixed compute below
+
     rewards = []
     novelty_bonuses = []
     invalid_count = 0
@@ -70,7 +85,10 @@ def compute_rewards(
             novelty = 0.0
             invalid_count += 1
         else:
-            r = (acc - best_so_far) if use_relative else acc
+            if reward_mode == "mixed":
+                r = reward_alpha * acc + (1 - reward_alpha) * (acc - best_so_far)
+            else:
+                r = acc - baseline
             novelty = 0.0
             if novelty_coef > 0 and recent_specs:
                 min_d = min(spec_distance(spec, s) for s in recent_specs)

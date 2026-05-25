@@ -26,7 +26,7 @@ def _c1_worker(kwargs):
 def _run_c2_batched(generate_fn, n_runs, seeds, G, program_md,
                     results_dir, data_root, max_train_steps,
                     history_k, history_top_k,
-                    invalid_penalty, use_relative_reward,
+                    invalid_penalty, reward_mode, reward_alpha,
                     novelty_coef, reward_floor, n_steps,
                     wandb_run, parallel_eval):
     """
@@ -83,8 +83,10 @@ def _run_c2_batched(generate_fn, n_runs, seeds, G, program_md,
             shaped, _ = compute_rewards(
                 raw_cands, accs, best_so_far=prev_best,
                 recent_specs=[e.spec for e in bufs[run_i].recent],
+                recent_accs=[e.acc for e in bufs[run_i].recent],
                 invalid_penalty=invalid_penalty,
-                use_relative=use_relative_reward,
+                reward_mode=reward_mode,
+                reward_alpha=reward_alpha,
                 novelty_coef=novelty_coef,
                 reward_floor=reward_floor,
             )
@@ -158,7 +160,12 @@ def main():
     parser.add_argument("--history-k", type=int, default=5)
     parser.add_argument("--history-top-k", type=int, default=3)
     parser.add_argument("--invalid-penalty", type=float, default=0.1)
-    parser.add_argument("--use-relative-reward", action="store_true", default=False)
+    parser.add_argument("--reward-mode", default="relative",
+                        choices=["relative", "absolute", "recent_mean", "mixed"],
+                        help="Reward baseline: relative=acc-best, absolute=acc, "
+                             "recent_mean=acc-mean(recent), mixed=alpha*acc+(1-alpha)*(acc-best)")
+    parser.add_argument("--reward-alpha", type=float, default=0.5,
+                        help="Alpha for mixed reward mode (default: 0.5)")
     parser.add_argument("--novelty-coef", type=float, default=0.0)
     parser.add_argument("--reward-floor", type=float, default=None)
     parser.add_argument("--parallel-eval", action="store_true", default=True)
@@ -194,8 +201,8 @@ def main():
         if "C5" in args.conditions:
             parts.append(f"lora-{args.lora_r}")
         parts.append(f"invalid-{args.invalid_penalty}")
-        if args.use_relative_reward:
-            parts.append("relative")
+        if args.reward_mode != "absolute":
+            parts.append(args.reward_mode)
         if args.novelty_coef > 0:
             parts.append(f"novel-{args.novelty_coef}")
         floor_tag = "null" if args.reward_floor is None else str(args.reward_floor)
@@ -246,7 +253,8 @@ def main():
         history_k=args.history_k,
         history_top_k=args.history_top_k,
         invalid_penalty=args.invalid_penalty,
-        use_relative_reward=args.use_relative_reward,
+        reward_mode=args.reward_mode,
+        reward_alpha=args.reward_alpha,
         novelty_coef=args.novelty_coef,
         reward_floor=args.reward_floor,
     )
@@ -422,7 +430,8 @@ def main():
                 max_train_steps=args.max_train_steps,
                 history_k=args.history_k, history_top_k=args.history_top_k,
                 invalid_penalty=args.invalid_penalty,
-                use_relative_reward=args.use_relative_reward,
+                reward_mode=args.reward_mode,
+                reward_alpha=args.reward_alpha,
                 novelty_coef=args.novelty_coef,
                 reward_floor=args.reward_floor,
                 n_steps=args.n_steps,
