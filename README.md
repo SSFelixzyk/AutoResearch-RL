@@ -4,6 +4,31 @@ A lightweight reproduction of the AutoResearch-RL pipeline on CIFAR-10. An LLM a
 
 ---
 
+## Preliminary Results
+
+Qwen3-1.7B, 60 research steps, 300 gradient steps per evaluation (single A100).
+
+![Comparison Plot](assets/results_v1.png)
+
+| Condition | Runs | Final Best Acc | ±std |
+|-----------|------|---------------|------|
+| C1: Random Search | 4 | 54.16% | ±1.72% |
+| C2: LLM, no history, G=1 | 4 | 42.32% | ±1.18% |
+| C3: LLM + history, G=1 | 4 | 54.59% | ±2.50% |
+| C4: LLM + history, G=4 | 1 | 55.67% | — |
+| C5: GRPO G=4 (relative reward) | 1 | 54.46% | — |
+| C5: GRPO G=4 (mixed reward) | 1 | **60.26%** | — |
+
+Key observations:
+- **C2 underperforms random search (42% vs 54%)**: Qwen3-1.7B without any history context reliably proposes narrow, suboptimal config patterns — the LLM prior is a liability without feedback.
+- **C3 ≈ C1**: History context brings the LLM back to parity with random, but no further improvement at G=1.
+- **C4 edges above C3**: Best-of-4 sampling provides a small but consistent gain.
+- **C5 reward design matters significantly**: With relative reward (`r = acc − best_so_far`) GRPO stalls at ≈54%; switching to mixed reward (`r = 0.5·acc + 0.5·(acc − best_so_far)`) lifts performance to 60.26%. The mixed baseline prevents all-negative group rewards that suppress GRPO's gradient signal.
+
+> C4 and C5 are single-run results — multi-run variance estimates pending.
+
+---
+
 ## Motivation
 
 The original AutoResearch-RL paper trains a PPO agent to write Python code diffs that improve a training script. This project simplifies the action space to a **structured JSON schema** (no free-form code generation), making reward evaluation deterministic and reproducible.
@@ -129,20 +154,22 @@ Shaped rewards are computed after each G-rollout and passed to the GRPO update:
 # For invalid JSON output:
 r = -invalid_penalty          # (default: -0.1)
 
-# For valid but hallucinated field values (e.g. norm="instance"):
-r = acc - best_so_far         # coerced to valid nearest value, small extra penalty
+# For valid candidates — four modes selectable via reward_mode in config.yaml:
+r = acc - best_so_far                              # "relative" — original
+r = acc                                             # "absolute"
+r = acc - mean(recent_accs)                         # "recent_mean" — moving baseline
+r = alpha*acc + (1-alpha)*(acc - best_so_far)       # "mixed" — recommended
 
-# For valid candidates:
-r = acc - best_so_far         # relative improvement over current best
-r += novelty_coef * min_dist  # bonus for diverse proposals (Hamming distance to recent)
-# no floor — allows graded negative signal when all candidates are below best
+r += novelty_coef * min_hamming_dist(spec, recent)  # diversity bonus
+# reward_floor applies only to valid candidates (null = no floor)
 ```
 
 Key design choices:
-- **Relative reward** (`acc - best_so_far`): incentivises improvement, not absolute accuracy
-- **No reward floor**: allows GRPO to distinguish "slightly below best" from "terrible config"; a floor of 0 collapses all below-best rewards to zero and kills the gradient signal after a good config is found
-- **Novelty bonus**: encourages exploration when the model starts repeating configurations
-- **Invalid penalty exempt from floor**: the model still receives -0.1 for broken JSON regardless of best_so_far
+- **Mixed reward** (default recommendation): combines absolute accuracy signal with improvement signal. Prevents all-negative group rewards that collapse GRPO's gradient when `best_so_far` is high. In practice, mixed vs relative accounts for ~6% absolute difference in final accuracy.
+- **Relative reward** (`acc - best_so_far`): pure improvement incentive, but can stall once a good config is found — all subsequent candidates score below best and rewards become uniformly very negative, reducing intra-group variance and suppressing GRPO updates.
+- **No reward floor**: a floor of 0 collapses all below-best candidates to the same reward, killing the gradient signal. Without a floor, graded negative rewards allow continuous learning.
+- **Novelty bonus**: encourages exploration when the model starts repeating configurations.
+- **Invalid penalty exempt from floor**: the model still receives -0.1 for broken JSON regardless of best_so_far.
 
 ---
 
@@ -299,7 +326,8 @@ python experiments/run_all.py \
 | `--history-k` | `5` | Recent experiments shown in prompt |
 | `--history-top-k` | `3` | Top experiments also shown in prompt |
 | `--invalid-penalty` | `0.1` | Penalty for invalid JSON output |
-| `--use-relative-reward` | off | `r = acc - best_so_far` instead of raw `acc` |
+| `--reward-mode` | `relative` | `relative` \| `absolute` \| `recent_mean` \| `mixed` |
+| `--reward-alpha` | `0.5` | Alpha for `mixed` mode: `alpha*acc + (1-alpha)*(acc-best)` |
 | `--novelty-coef` | `0.02` | Diversity bonus coefficient |
 | `--reward-floor` | `null` | Floor for valid-candidate rewards (null = no floor) |
 | `--use-kl-penalty` | off | Add KL(π_θ ‖ π_ref) penalty to GRPO loss |
@@ -363,7 +391,7 @@ Each 300-step CIFAR-10 evaluation takes ~40s on A100. C5 forces sequential eval 
 
 **Why `coerce_spec` instead of hard rejection?** Hard rejection on slightly out-of-range numerics wastes evaluations. `coerce_spec` snaps values to the nearest allowed option so the config is always evaluated. String fields that are simply wrong (e.g. `norm: "instance"`) are coerced but flagged for a penalty so GRPO still learns to avoid them.
 
-**Why no reward floor?** A floor of 0 with relative rewards collapses all below-best candidates to the same reward (0) once a good config is found. GRPO cannot distinguish "slightly bad" from "catastrophically bad" — gradient goes to zero. Without a floor, graded negative rewards allow continuous learning even after finding a local optimum.
+**Why no reward floor?** A floor of 0 with relative rewards collapses all below-best candidates to the same reward (0) once a good config is found. GRPO cannot distinguish "slightly bad" from "catastrophically bad" — gradient goes to zero. Without a floor, graded negative rewards allow continuous learning even after finding a local optimum. A moderate floor (e.g. −0.1) is a viable middle ground if extreme negative rewards cause instability.
 
 **Why manual GRPO instead of verl/trl?** Our reward requires ~40–60s of CIFAR-10 training per sample. verl and trl assume millisecond rewards. Implementing GRPO manually (~100 lines) is simpler and avoids framework mismatch.
 
