@@ -1,0 +1,28 @@
+{
+  "config": "config.yaml",
+  "n_steps": 60,
+  "max_train_steps": 300,
+  "model": "/root/autodl-tmp/models/Qwen/Qwen3-1.7B",
+  "data_root": "./data",
+  "results_dir": "results/conds-5--steps-60--maxsteps-300--lora-16--invalid-0.1--mixed--novel-0.02--floor-null",
+  "conditions": [
+    "C5"
+  ],
+  "use_kl_penalty": true,
+  "kl_coef": 0.1,
+  "lora_r": 16,
+  "lora_alpha": 32,
+  "history_k": 5,
+  "history_top_k": 3,
+  "invalid_penalty": 0.1,
+  "reward_mode": "mixed",
+  "reward_alpha": 0.5,
+  "novelty_coef": 0.02,
+  "reward_floor": null,
+  "parallel_eval": true,
+  "no_parallel": false,
+  "wandb_project": "cifar10-automl",
+  "seed": 0,
+  "n_runs": 1,
+  "parallel_runs": false
+}

@@ -1,0 +1,167 @@
+% ============================================================
+%  Experiment Setup — NeurIPS 2026 style
+% ============================================================
+
+\section{Experiment Setup}
+\label{sec:setup}
+
+\subsection{Task: Structured Neural Architecture Search}
+\label{sec:task}
+
+We instantiate the AutoResearch-RL pipeline on CIFAR-10 image classification.
+At each research step an LLM agent proposes a neural architecture and
+training-recipe configuration; a deterministic harness compiles the
+configuration into a PyTorch model, trains it for a fixed number of gradient
+steps, and returns the validation accuracy as the reward signal.
+Unlike the original AutoResearch-RL formulation, which asks the LLM to
+generate free-form Python code diffs, we restrict proposals to a
+\textbf{structured JSON schema} (\texttt{ArchSpec}).
+This choice (i) makes the reward fully deterministic---any valid JSON is
+immediately executable---and (ii) eliminates confounds from syntax errors or
+unrunnable code, allowing the comparison to isolate the contribution of search
+strategy alone.
+
+\subsection{Action Space}
+\label{sec:action_space}
+
+\texttt{ArchSpec} is a Pydantic-validated JSON object with discrete fields.
+A network is specified as an ordered sequence of 1--4 convolutional stages
+followed by global average pooling and a linear classifier.
+
+\begin{table}[h]
+\centering
+\caption{Action space fields and valid values.}
+\label{tab:action_space}
+\small
+\begin{tabular}{llr}
+\toprule
+\textbf{Field} & \textbf{Valid values} & \textbf{\# options} \\
+\midrule
+\multicolumn{3}{l}{\textit{Per stage (1--4 stages)}} \\
+\quad \texttt{out\_channels} & 32, 64, 128, 256 & 4 \\
+\quad \texttt{num\_blocks}   & 1, 2, 3           & 3 \\
+\quad \texttt{norm}          & none, batch, group & 3 \\
+\quad \texttt{activation}    & relu, gelu, silu   & 3 \\
+\quad \texttt{downsample}    & stride, maxpool, avgpool & 3 \\
+\midrule
+\multicolumn{3}{l}{\textit{Network-level}} \\
+\quad \texttt{use\_residual} & true, false       & 2 \\
+\quad \texttt{dropout}       & 0.0, 0.1, 0.2, 0.3, 0.5 & 5 \\
+\quad \texttt{scheduler}     & none, cosine, step & 3 \\
+\quad \texttt{augment}       & none, basic, medium, strong & 4 \\
+\midrule
+\multicolumn{3}{l}{\textit{Optimizer}} \\
+\quad \texttt{type}          & sgd, adam, adamw  & 3 \\
+\quad \texttt{lr}            & 0.001, 0.003, 0.01 & 3 \\
+\quad \texttt{weight\_decay} & 0.0, 0.001, 0.01, 0.05 & 4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The total space is approximately $6.4 \times 10^{13}$ configurations
+(4-stage architectures alone: $324^4 \approx 1.1 \times 10^{10}$; combined
+with $5{,}760$ non-architecture options).
+With 60 research steps and $G{=}4$ candidates per step, each full run evaluates
+240 configurations, covering roughly $3.7 \times 10^{-10}\%$ of the space.
+
+\subsection{Evaluation Oracle}
+\label{sec:oracle}
+
+Each configuration is evaluated by \texttt{evaluate\_spec}, which trains the
+compiled model for exactly \texttt{max\_train\_steps}$\,{=}\,300$ gradient
+steps on CIFAR-10 (50k training images, 10k validation images,
+batch size 128) and returns the final validation accuracy.
+Fixing gradient steps rather than epochs ensures every architecture receives
+an identical compute budget regardless of depth or width, making accuracy
+directly comparable across configurations.
+All evaluations use the same data split and a condition-specific random seed
+to reduce evaluation noise.
+
+\subsection{Experimental Conditions}
+\label{sec:conditions}
+
+We design five conditions as a sequential ablation, each isolating a single
+variable relative to the previous condition.
+
+\begin{table}[h]
+\centering
+\caption{Experimental conditions and their ablation targets.}
+\label{tab:conditions}
+\small
+\begin{tabular}{clcccl}
+\toprule
+\textbf{ID} & \textbf{Name} & \textbf{$G$} & \textbf{History} &
+\textbf{RL update} & \textbf{Ablation question} \\
+\midrule
+C1 & Random Search    & 1 & \texttimes & \texttimes &
+    Baseline: pure random exploration \\
+C2 & LLM, no history  & 1 & \texttimes & \texttimes &
+    Does the LLM prior beat random? \\
+C3 & LLM + history    & 1 & \checkmark & \texttimes &
+    Does in-context history help? \\
+C4 & LLM + history, $G{=}4$ & 4 & \checkmark & \texttimes &
+    Does best-of-$G$ sampling help? \\
+C5 & GRPO, $G{=}4$   & 4 & \checkmark & \checkmark (LoRA) &
+    Does online RL weight update help? \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{History buffer.}
+Conditions C3--C5 maintain a sliding-window buffer of the $k{=}5$ most recent
+experiments and the top-3 experiments by accuracy.
+At each step, the full buffer is serialised into the LLM prompt so the model
+can observe which configurations succeeded and which failed.
+
+\paragraph{Parallel evaluation.}
+For conditions with $G{>}1$, the $G$ candidates within a step are evaluated
+in parallel using \texttt{multiprocessing} (spawn context) to avoid CUDA
+context conflicts.
+C5 forces sequential evaluation because simultaneously loading $G{=}4$
+CNN training runs and the Qwen3-1.7B model would exceed GPU memory.
+
+\paragraph{LLM model.}
+Conditions C2--C5 use Qwen3-1.7B~\citep{qwen3} with thinking tokens enabled.
+Generation uses a temperature of 0.8.
+For C5, LoRA adapters ($r{=}16$, $\alpha{=}32$) are applied to the
+\texttt{q\_proj} and \texttt{v\_proj} matrices of the LLM and updated
+online via GRPO after each step.
+
+\subsection{Reward Design}
+\label{sec:reward}
+
+The shaped reward passed to the GRPO update combines an accuracy signal
+with an exploration bonus:
+\begin{equation}
+r_i =
+\begin{cases}
+-\delta & \text{if output is invalid JSON} \\[4pt]
+f(a_i) + \lambda \cdot d_{\min}(s_i, \mathcal{H}) & \text{otherwise}
+\end{cases}
+\label{eq:reward}
+\end{equation}
+where $a_i \in [0,1]$ is the validation accuracy of candidate $i$,
+$d_{\min}$ is the minimum normalised Hamming distance from $s_i$ to any
+configuration in the recent history $\mathcal{H}$ (novelty bonus),
+$\lambda{=}0.02$, and $\delta{=}0.1$ is the invalid-output penalty.
+
+We experiment with two choices for the accuracy component $f(a_i)$:
+
+\begin{itemize}
+    \item \textbf{Relative:} $f(a_i) = a_i - a^*$, where $a^*$ is the
+    current best accuracy. This rewards only improvement over the best
+    configuration found so far.
+    \item \textbf{Mixed:} $f(a_i) = \alpha \cdot a_i +
+    (1-\alpha)(a_i - a^*)$, with $\alpha{=}0.5$.
+    This retains an absolute accuracy signal, preventing the group reward
+    from becoming uniformly negative once a strong baseline is established.
+\end{itemize}
+
+The distinction between these two formulations turns out to be consequential
+for GRPO training (Section~\ref{sec:results}).
+Under the relative formulation, once $a^*$ reaches a high value the rewards
+for all $G$ candidates in a group are simultaneously large and negative;
+the group-relative advantage
+$A_i = (r_i - \bar{r}) / (\sigma_r + \varepsilon)$
+has near-zero variance, effectively killing the gradient signal.
+The mixed formulation avoids this degeneracy.

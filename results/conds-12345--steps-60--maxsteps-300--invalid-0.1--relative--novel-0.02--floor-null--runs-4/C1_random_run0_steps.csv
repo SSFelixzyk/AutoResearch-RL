@@ -1,0 +1,61 @@
+step,candidate,acc,is_best,best_so_far,spec_summary,wall_time
+0,0,0.5040,True,0.5040,"stages=[C256x1(batch,silu,maxpool), C256x2(batch,gelu,avgpool), C64x3(none,gelu,stride), C32x3(batch,silu,avgpool)] residual=True drop=0.2 opt=adamw(lr=0.001,wd=0.0) sched=step aug=medium",28.8
+1,0,0.3725,False,0.5040,"stages=[C32x2(none,gelu,maxpool), C256x3(batch,relu,stride)] residual=True drop=0.3 opt=adam(lr=0.003,wd=0.0) sched=step aug=strong",36.3
+2,0,0.3185,False,0.5040,"stages=[C32x1(batch,relu,avgpool)] residual=False drop=0.2 opt=adamw(lr=0.01,wd=0.001) sched=step aug=none",17.0
+3,0,0.1000,False,0.5040,"stages=[C64x2(group,gelu,avgpool), C32x3(none,gelu,maxpool)] residual=True drop=0.1 opt=adamw(lr=0.01,wd=0.05) sched=step aug=strong",36.9
+4,0,0.4233,False,0.5040,"stages=[C128x1(group,gelu,maxpool), C64x1(none,relu,maxpool)] residual=False drop=0.0 opt=adamw(lr=0.001,wd=0.01) sched=cosine aug=basic",16.8
+5,0,0.4967,False,0.5040,"stages=[C128x3(group,silu,avgpool), C32x2(none,silu,stride), C64x1(batch,gelu,stride)] residual=True drop=0.5 opt=adam(lr=0.001,wd=0.0) sched=step aug=basic",22.5
+6,0,0.2834,False,0.5040,"stages=[C256x2(none,relu,stride)] residual=False drop=0.2 opt=adamw(lr=0.003,wd=0.0) sched=cosine aug=strong",44.0
+7,0,0.2118,False,0.5040,"stages=[C64x2(group,relu,stride), C32x2(group,relu,avgpool), C64x1(none,gelu,maxpool)] residual=True drop=0.5 opt=sgd(lr=0.003,wd=0.0) sched=step aug=none",22.0
+8,0,0.1717,False,0.5040,"stages=[C128x2(none,relu,avgpool), C32x1(none,relu,avgpool)] residual=True drop=0.3 opt=sgd(lr=0.003,wd=0.05) sched=cosine aug=strong",34.2
+9,0,0.5402,True,0.5402,"stages=[C128x2(none,relu,avgpool), C32x2(group,gelu,avgpool), C32x2(group,silu,avgpool), C32x3(batch,relu,avgpool)] residual=False drop=0.1 opt=adam(lr=0.001,wd=0.001) sched=none aug=none",17.6
+10,0,0.2156,False,0.5402,"stages=[C256x2(group,relu,stride)] residual=False drop=0.2 opt=adam(lr=0.01,wd=0.001) sched=none aug=strong",28.1
+11,0,0.3558,False,0.5402,"stages=[C256x2(group,silu,stride), C64x3(batch,silu,avgpool), C64x1(batch,gelu,stride), C32x3(group,silu,stride)] residual=False drop=0.3 opt=adamw(lr=0.01,wd=0.001) sched=step aug=none",21.9
+12,0,0.1725,False,0.5402,"stages=[C128x3(group,silu,maxpool), C64x2(none,gelu,maxpool), C128x3(batch,silu,avgpool), C64x3(none,silu,avgpool)] residual=False drop=0.1 opt=sgd(lr=0.003,wd=0.001) sched=none aug=basic",22.6
+13,0,0.3683,False,0.5402,"stages=[C128x3(group,relu,avgpool), C64x3(none,relu,avgpool), C64x1(none,silu,stride)] residual=False drop=0.0 opt=adamw(lr=0.003,wd=0.001) sched=step aug=none",16.7
+14,0,0.3267,False,0.5402,"stages=[C64x2(group,gelu,maxpool)] residual=True drop=0.3 opt=adamw(lr=0.003,wd=0.05) sched=step aug=strong",41.6
+15,0,0.3471,False,0.5402,"stages=[C32x3(group,relu,stride), C64x1(none,silu,stride)] residual=False drop=0.1 opt=adamw(lr=0.001,wd=0.01) sched=cosine aug=medium",19.2
+16,0,0.3326,False,0.5402,"stages=[C256x2(batch,gelu,stride), C256x1(batch,silu,avgpool), C128x1(group,relu,stride)] residual=False drop=0.2 opt=adam(lr=0.01,wd=0.001) sched=step aug=medium",24.1
+17,0,0.5269,False,0.5402,"stages=[C128x2(batch,relu,avgpool), C128x1(none,relu,maxpool), C256x2(group,gelu,avgpool), C256x1(group,relu,stride)] residual=True drop=0.2 opt=sgd(lr=0.01,wd=0.0) sched=step aug=none",20.2
+18,0,0.3948,False,0.5402,"stages=[C32x3(batch,gelu,stride), C64x2(group,gelu,stride)] residual=False drop=0.3 opt=adam(lr=0.003,wd=0.001) sched=cosine aug=none",14.4
+19,0,0.2982,False,0.5402,"stages=[C32x3(none,gelu,maxpool)] residual=False drop=0.5 opt=adamw(lr=0.001,wd=0.01) sched=none aug=medium",18.8
+20,0,0.3339,False,0.5402,"stages=[C128x3(group,relu,maxpool), C64x1(batch,gelu,stride)] residual=False drop=0.3 opt=sgd(lr=0.01,wd=0.05) sched=cosine aug=basic",20.0
+21,0,0.3940,False,0.5402,"stages=[C256x3(batch,silu,maxpool), C256x1(batch,silu,stride)] residual=True drop=0.0 opt=adamw(lr=0.001,wd=0.01) sched=step aug=strong",65.6
+22,0,0.3585,False,0.5402,"stages=[C64x1(group,gelu,stride), C32x3(group,gelu,stride)] residual=True drop=0.2 opt=sgd(lr=0.01,wd=0.001) sched=step aug=strong",33.0
+23,0,0.4528,False,0.5402,"stages=[C32x1(group,gelu,maxpool), C256x3(batch,relu,avgpool), C64x2(batch,relu,stride)] residual=False drop=0.0 opt=adamw(lr=0.001,wd=0.0) sched=step aug=strong",36.2
+24,0,0.4076,False,0.5402,"stages=[C64x1(none,relu,stride), C32x3(none,silu,maxpool), C32x2(batch,silu,avgpool), C32x1(group,relu,maxpool)] residual=False drop=0.2 opt=adamw(lr=0.003,wd=0.0) sched=step aug=medium",29.6
+25,0,0.4354,False,0.5402,"stages=[C32x1(batch,silu,maxpool), C32x2(none,gelu,avgpool), C256x1(group,relu,avgpool), C64x3(group,gelu,stride)] residual=False drop=0.5 opt=adamw(lr=0.003,wd=0.0) sched=step aug=none",18.1
+26,0,0.4335,False,0.5402,"stages=[C64x2(group,silu,stride), C64x2(none,silu,avgpool)] residual=True drop=0.3 opt=adamw(lr=0.001,wd=0.05) sched=step aug=basic",18.5
+27,0,0.2392,False,0.5402,"stages=[C128x2(none,relu,stride), C128x3(batch,gelu,maxpool), C256x1(none,relu,maxpool), C32x3(group,silu,avgpool)] residual=False drop=0.0 opt=sgd(lr=0.01,wd=0.05) sched=cosine aug=none",23.5
+28,0,0.2196,False,0.5402,"stages=[C64x3(group,silu,stride)] residual=False drop=0.3 opt=sgd(lr=0.001,wd=0.001) sched=none aug=strong",28.3
+29,0,0.4276,False,0.5402,"stages=[C128x3(group,gelu,stride)] residual=False drop=0.3 opt=adamw(lr=0.003,wd=0.0) sched=none aug=none",18.5
+30,0,0.2523,False,0.5402,"stages=[C32x3(group,relu,maxpool), C32x2(batch,silu,stride), C32x2(none,silu,stride)] residual=True drop=0.5 opt=sgd(lr=0.01,wd=0.05) sched=step aug=medium",17.2
+31,0,0.3341,False,0.5402,"stages=[C256x1(batch,relu,avgpool)] residual=True drop=0.5 opt=sgd(lr=0.001,wd=0.001) sched=none aug=none",22.9
+32,0,0.3160,False,0.5402,"stages=[C64x1(batch,silu,stride)] residual=True drop=0.0 opt=adam(lr=0.001,wd=0.01) sched=step aug=medium",24.2
+33,0,0.3397,False,0.5402,"stages=[C64x2(batch,silu,avgpool), C64x3(group,silu,maxpool)] residual=False drop=0.3 opt=adamw(lr=0.003,wd=0.0) sched=cosine aug=strong",39.0
+34,0,0.3860,False,0.5402,"stages=[C32x1(none,gelu,maxpool), C32x2(batch,gelu,stride), C64x1(batch,gelu,avgpool)] residual=True drop=0.0 opt=sgd(lr=0.003,wd=0.01) sched=step aug=none",15.8
+35,0,0.3798,False,0.5402,"stages=[C64x3(batch,relu,maxpool), C256x2(group,relu,avgpool), C128x3(batch,silu,avgpool)] residual=True drop=0.5 opt=sgd(lr=0.001,wd=0.0) sched=step aug=strong",40.6
+36,0,0.3042,False,0.5402,"stages=[C32x1(batch,relu,stride), C64x1(batch,silu,avgpool), C256x2(group,gelu,avgpool)] residual=False drop=0.3 opt=sgd(lr=0.003,wd=0.05) sched=none aug=strong",38.1
+37,0,0.2875,False,0.5402,"stages=[C32x3(batch,gelu,avgpool)] residual=False drop=0.3 opt=sgd(lr=0.01,wd=0.05) sched=cosine aug=basic",21.1
+38,0,0.2680,False,0.5402,"stages=[C256x3(none,relu,maxpool), C256x2(none,silu,avgpool), C64x3(batch,gelu,maxpool), C128x3(group,gelu,maxpool)] residual=False drop=0.1 opt=adamw(lr=0.01,wd=0.0) sched=step aug=strong",46.1
+39,0,0.2690,False,0.5402,"stages=[C128x2(none,relu,stride), C256x3(group,relu,avgpool)] residual=False drop=0.1 opt=adam(lr=0.001,wd=0.01) sched=step aug=none",17.6
+40,0,0.2627,False,0.5402,"stages=[C32x1(batch,silu,avgpool), C64x1(batch,gelu,avgpool), C256x1(group,silu,stride), C32x3(none,silu,avgpool)] residual=True drop=0.1 opt=adam(lr=0.01,wd=0.01) sched=none aug=medium",24.0
+41,0,0.3629,False,0.5402,"stages=[C128x1(none,gelu,avgpool), C128x3(batch,gelu,avgpool), C32x1(group,relu,maxpool), C64x1(group,gelu,stride)] residual=True drop=0.0 opt=adam(lr=0.01,wd=0.0) sched=cosine aug=medium",22.2
+42,0,0.3448,False,0.5402,"stages=[C32x3(batch,relu,stride)] residual=True drop=0.5 opt=sgd(lr=0.003,wd=0.0) sched=none aug=none",15.9
+43,0,0.1000,False,0.5402,"stages=[C128x3(none,gelu,maxpool)] residual=True drop=0.3 opt=adamw(lr=0.01,wd=0.05) sched=step aug=none",19.3
+44,0,0.4661,False,0.5402,"stages=[C32x1(batch,relu,maxpool), C32x1(none,silu,stride), C32x1(group,silu,maxpool), C256x3(batch,silu,avgpool)] residual=False drop=0.0 opt=adam(lr=0.003,wd=0.01) sched=step aug=basic",18.9
+45,0,0.4382,False,0.5402,"stages=[C256x2(batch,relu,maxpool), C128x1(none,gelu,stride), C32x2(none,gelu,avgpool)] residual=True drop=0.5 opt=adamw(lr=0.001,wd=0.001) sched=cosine aug=basic",43.9
+46,0,0.3279,False,0.5402,"stages=[C256x1(group,silu,stride)] residual=True drop=0.5 opt=adamw(lr=0.01,wd=0.0) sched=none aug=none",30.1
+47,0,0.1919,False,0.5402,"stages=[C32x2(group,gelu,avgpool), C128x2(group,gelu,maxpool), C32x2(group,relu,stride)] residual=False drop=0.5 opt=sgd(lr=0.001,wd=0.01) sched=step aug=strong",32.6
+48,0,0.3393,False,0.5402,"stages=[C64x3(group,silu,maxpool), C64x3(batch,relu,stride), C32x2(group,relu,stride)] residual=True drop=0.3 opt=adamw(lr=0.001,wd=0.0) sched=none aug=strong",34.8
+49,0,0.0995,False,0.5402,"stages=[C128x2(none,gelu,avgpool)] residual=True drop=0.0 opt=adamw(lr=0.01,wd=0.01) sched=none aug=strong",33.5
+50,0,0.3842,False,0.5402,"stages=[C128x2(group,relu,avgpool), C256x2(none,silu,maxpool), C64x3(group,relu,stride), C128x1(batch,gelu,stride)] residual=False drop=0.5 opt=sgd(lr=0.01,wd=0.05) sched=step aug=none",22.8
+51,0,0.4608,False,0.5402,"stages=[C64x1(none,silu,maxpool), C256x3(batch,silu,avgpool)] residual=False drop=0.5 opt=adamw(lr=0.01,wd=0.01) sched=cosine aug=medium",21.6
+52,0,0.3993,False,0.5402,"stages=[C32x3(group,gelu,maxpool), C256x1(none,relu,maxpool), C64x2(batch,silu,stride)] residual=False drop=0.0 opt=sgd(lr=0.001,wd=0.0) sched=none aug=basic",18.3
+53,0,0.4385,False,0.5402,"stages=[C256x3(group,gelu,avgpool), C128x3(batch,silu,stride)] residual=False drop=0.1 opt=sgd(lr=0.003,wd=0.0) sched=none aug=none",32.1
+54,0,0.4085,False,0.5402,"stages=[C256x3(batch,gelu,maxpool), C256x1(batch,gelu,avgpool)] residual=False drop=0.1 opt=adamw(lr=0.01,wd=0.001) sched=none aug=strong",31.7
+55,0,0.3552,False,0.5402,"stages=[C64x1(group,gelu,stride)] residual=True drop=0.2 opt=adamw(lr=0.001,wd=0.01) sched=step aug=strong",39.0
+56,0,0.3602,False,0.5402,"stages=[C256x3(group,gelu,avgpool)] residual=True drop=0.0 opt=adam(lr=0.003,wd=0.0) sched=cosine aug=medium",32.9
+57,0,0.2599,False,0.5402,"stages=[C128x3(group,relu,stride)] residual=False drop=0.3 opt=adamw(lr=0.003,wd=0.05) sched=step aug=strong",25.4
+58,0,0.3697,False,0.5402,"stages=[C64x3(group,relu,stride), C64x2(batch,gelu,maxpool)] residual=False drop=0.5 opt=adam(lr=0.003,wd=0.01) sched=step aug=none",10.5
+59,0,0.1374,False,0.5402,"stages=[C32x3(batch,relu,stride), C128x3(none,silu,avgpool)] residual=False drop=0.3 opt=sgd(lr=0.01,wd=0.01) sched=none aug=medium",12.5
